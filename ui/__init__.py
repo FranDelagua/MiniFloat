@@ -1,0 +1,1 @@
+"""MiniFloat user interface."""

@@ -1,0 +1,1 @@
+"""Application lifecycle for MiniFloat."""
