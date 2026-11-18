@@ -26,7 +26,7 @@ la minimización y el cierre de la ventana.
   redimensionarla.
 - Los botones permiten minimizar o cerrar. No se incluye maximización porque
   MiniFloat está pensado como una ventana flotante compacta.
-- El deslizador de la barra superior ajusta la opacidad de toda la ventana,
+- El deslizador de la barra inferior ajusta la opacidad de toda la ventana,
   incluidos controles y ventanas internas, entre el 25 % y el 100 %. Al 100 %
   el fondo es opaco; las esquinas siguen siendo transparentes.
 - La configuración se crea en `%LOCALAPPDATA%\MiniFloat\settings.json`:
@@ -44,6 +44,10 @@ la minimización y el cierre de la ventana.
   inicial `opacity` (entre `0.60` y `1.00`). Los cambios se aplican al iniciar.
   El deslizador no guarda aún sus cambios: al volver a abrir se utiliza el
   valor del archivo.
+- El PIN comienza activado. Con **PIN OFF**, el fondo vacío deja pasar los
+  clics a otras aplicaciones, mientras las ventanas internas y la barra
+  inferior siguen siendo interactivas. PIN controla la entrada; es independiente
+  de la opción Always on Top. Esta función está destinada a Windows.
 - Si el archivo es ilegible, corrupto o tiene valores inválidos, MiniFloat
   muestra un error y no lo sobrescribe. Corrígelo antes de volver a iniciar.
 - La posición y el tamaño todavía no se guardan al cerrar.
@@ -53,9 +57,8 @@ la minimización y el cierre de la ventana.
 Las dos ventanas de prueba pueden moverse, redimensionarse, superponerse,
 minimizarse y cerrarse por separado. Su contenido y su distribución se
 reinician al abrir MiniFloat; todavía no hay catálogo para volver a abrirlas.
-Si el escritorio queda demasiado pequeño, las barras de desplazamiento permiten
-acceder a las partes que queden fuera. Comprueba también el comportamiento al
-mover una ventana cerca de los bordes y al reducir MiniFloat.
+Las ventanas se mantienen dentro del área visible, incluso cuando MiniFloat
+se reduce. Comprueba también el movimiento y el redimensionado en los bordes.
 
 Se utiliza `QMdiArea` como prueba, no como decisión visual definitiva: sus
 decoraciones y controles dependen del estilo de Qt y pueden tener apariencia
@@ -64,6 +67,23 @@ ventanas independientes de Windows ni se intercalan con aplicaciones externas.
 MiniFloat es una ventana flotante sobre el escritorio de Windows, no un
 escritorio virtual de Windows ni un sustituto de este. La configuración de la
 sección anterior también sigue pendiente de validación completa en Windows.
+
+En PIN OFF, el área vacía de la ventana principal tiene alfa cero para permitir
+el paso de la entrada. Una ventana de fondo sin entrada conserva su apariencia
+visual; la barra inferior tiene una ventana nativa propia. Ambas siguen a la
+ventana principal y se ocultan al minimizarla. `SetWindowPos` mantiene el
+fondo detrás de MiniFloat sin activar otra aplicación.
+
+## Comprobaciones manuales en Windows
+
+1. Mueve y redimensiona las ventanas internas contra todos los bordes y
+   esquinas; reduce MiniFloat y comprueba que siguen siendo recuperables.
+2. Con PIN ON, comprueba los controles y las ventanas internas.
+3. Con PIN OFF, pulsa una zona vacía sobre otra aplicación y comprueba que
+   recibe el clic. Comprueba también que las ventanas internas, la opacidad y
+   PIN siguen funcionando y que PIN ON restaura la interacción completa.
+4. Prueba opacidades del 25 %, 50 %, 75 % y 100 % con ambos estados de PIN;
+   mueve, redimensiona, minimiza y restaura la ventana exterior.
 
 ## Pruebas
 

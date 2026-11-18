@@ -22,6 +22,21 @@ QLabel#testWindowContent {
     background: #272d37;
     color: #b6becb;
 }
+QWidget#controlBar {
+    background: #252b34;
+    border-radius: 5px;
+}
+QToolButton#pinButton {
+    background: #39414d;
+    padding: 0 7px;
+    font-size: 11px;
+}
+QToolButton#pinButton:checked {
+    background: #476456;
+}
+QToolButton#pinButton:hover {
+    background: #596a70;
+}
 QToolButton {
     border: none;
     border-radius: 5px;
