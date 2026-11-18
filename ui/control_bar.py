@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QRegion
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSlider, QToolButton, QWidget
 
 
@@ -18,10 +19,12 @@ class ControlBar(QWidget):
         slider.setRange(25, 100)
         slider.setValue(opacity)
         slider.setFixedWidth(100)
+        self._opacity_slider = slider
 
         value_label = QLabel(f"{slider.value()}%", self)
         value_label.setObjectName("opacityValue")
         value_label.setFixedWidth(34)
+        self._opacity_value_label = value_label
         slider.valueChanged.connect(lambda value: value_label.setText(f"{value}%"))
         slider.valueChanged.connect(self.opacity_changed.emit)
 
@@ -46,3 +49,19 @@ class ControlBar(QWidget):
     def _pin_toggled(self, checked: bool) -> None:
         self.pin_button.setText("PIN ON" if checked else "PIN OFF")
         self.pin_changed.emit(checked)
+
+    def set_pin_only_mode(self, enabled: bool) -> None:
+        self._opacity_slider.setEnabled(not enabled)
+        layout = self.layout()
+        if layout is not None:
+            layout.activate()
+        if enabled:
+            self.setMask(QRegion(self.pin_button.geometry()))
+        else:
+            self.clearMask()
+
+    def set_opacity_value(self, value: int) -> None:
+        signals_blocked = self._opacity_slider.blockSignals(True)
+        self._opacity_slider.setValue(value)
+        self._opacity_slider.blockSignals(signals_blocked)
+        self._opacity_value_label.setText(f"{value}%")

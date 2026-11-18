@@ -19,8 +19,14 @@ def place_directly_below(window_handle: int, upper_handle: int) -> None:
         wintypes.UINT,
     ]
     set_window_pos.restype = wintypes.BOOL
-    no_size, no_move, no_activate = 0x0001, 0x0002, 0x0010
+    no_size, no_move, no_activate, no_owner_zorder = 0x0001, 0x0002, 0x0010, 0x0200
     if not set_window_pos(
-        window_handle, upper_handle, 0, 0, 0, 0, no_size | no_move | no_activate
+        window_handle,
+        upper_handle,
+        0,
+        0,
+        0,
+        0,
+        no_size | no_move | no_activate | no_owner_zorder,
     ):
         raise ctypes.WinError(ctypes.get_last_error())

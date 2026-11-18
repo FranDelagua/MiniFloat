@@ -28,6 +28,7 @@ class TitleBar(QWidget):
         close.setAccessibleName("Cerrar")
         close.setToolTip("Cerrar")
         close.clicked.connect(self.window().close)
+        self._control_buttons = (minimize, close)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 4, 4, 4)
@@ -37,8 +38,15 @@ class TitleBar(QWidget):
         layout.addWidget(minimize)
         layout.addWidget(close)
 
+    def set_interactive(self, enabled: bool) -> None:
+        for button in self._control_buttons:
+            button.setEnabled(enabled)
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
+            if self.window().windowFlags() & Qt.WindowType.WindowTransparentForInput:
+                event.accept()
+                return
             handle = self.window().windowHandle()
             if handle is not None and not handle.startSystemMove():
                 logger.warning("Windows could not start moving the window.")

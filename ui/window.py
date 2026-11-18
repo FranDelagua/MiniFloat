@@ -32,6 +32,7 @@ class MainWindow(QWidget):
     def __init__(self, always_on_top: bool = True, opacity: float = 0.92) -> None:
         super().__init__()
         self._pinned = True
+        self._opacity = opacity
         self._control_bar: ControlBar | None = None
         self._backdrop: Backdrop | None = None
         self.setWindowTitle("MiniFloat")
@@ -109,7 +110,10 @@ class MainWindow(QWidget):
             painter.drawRoundedRect(QRectF(self.rect()), CORNER_RADIUS, CORNER_RADIUS)
 
     def _set_opacity(self, value: int) -> None:
+        if not self._pinned:
+            return
         opacity = value / 100
+        self._opacity = opacity
         self.setWindowOpacity(opacity)
         if self._control_bar is not None:
             self._control_bar.setWindowOpacity(opacity)
@@ -117,7 +121,18 @@ class MainWindow(QWidget):
             self._backdrop.setWindowOpacity(opacity)
 
     def _set_pinned(self, pinned: bool) -> None:
+        if self._pinned == pinned:
+            return
         self._pinned = pinned
+        self._desktop.set_interactive(pinned)
+        self._title_bar.set_interactive(pinned)
+        self._control_bar.set_pin_only_mode(not pinned)
+        if pinned:
+            self._control_bar.set_opacity_value(round(self._opacity * 100))
+        was_visible = self.isVisible()
+        self.setWindowFlag(Qt.WindowType.WindowTransparentForInput, not pinned)
+        if was_visible:
+            self.show()
         self._update_backdrop_cutouts()
         self._sync_surfaces()
         self.update()
@@ -146,10 +161,8 @@ class MainWindow(QWidget):
         try:
             place_directly_below(int(self._backdrop.winId()), int(self.winId()))
         except OSError as error:
-            self._pinned = True
-            self._backdrop.hide()
+            self._set_pinned(True)
             self._control_bar.pin_button.setChecked(True)
-            self.update()
             QMessageBox.critical(self, "MiniFloat - PIN", f"No se pudo activar PIN OFF: {error}")
 
     def _update_backdrop_cutouts(self) -> None:
@@ -224,6 +237,9 @@ class MainWindow(QWidget):
         return edges
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if not self._pinned:
+            event.accept()
+            return
         if event.button() == Qt.MouseButton.LeftButton:
             edges = self._resize_edges(event.position())
             handle = self.windowHandle()

@@ -9,6 +9,7 @@ class Desktop(QMdiArea):
     def __init__(self) -> None:
         super().__init__()
         self._constraining = False
+        self._interactive = True
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setBackground(QBrush(Qt.GlobalColor.transparent))
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -31,6 +32,10 @@ class Desktop(QMdiArea):
             | Qt.WindowType.WindowCloseButtonHint
         )
         subwindow.setWindowTitle(title)
+        subwindow.setMinimumSize(120, 70)
+        subwindow.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, not self._interactive
+        )
 
         content = QLabel("Ventana de prueba")
         content.setObjectName("testWindowContent")
@@ -41,6 +46,13 @@ class Desktop(QMdiArea):
         subwindow.installEventFilter(self)
         subwindow.setGeometry(x, y, width, height)
         subwindow.show()
+
+    def set_interactive(self, enabled: bool) -> None:
+        self._interactive = enabled
+        for subwindow in self.subWindowList():
+            subwindow.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents, not enabled
+            )
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if watched is self.viewport() and event.type() == QEvent.Type.Resize:
@@ -55,6 +67,9 @@ class Desktop(QMdiArea):
             QEvent.Type.WindowStateChange,
         ):
             if not self._constraining:
+                if watched.isMinimized():
+                    self.layout_changed.emit()
+                    return super().eventFilter(watched, event)
                 self._constrain(watched)
                 self.layout_changed.emit()
         return super().eventFilter(watched, event)
@@ -69,8 +84,8 @@ class Desktop(QMdiArea):
         try:
             if not subwindow.isMinimized():
                 subwindow.resize(
-                    min(subwindow.width(), area.width()),
-                    min(subwindow.height(), area.height()),
+                    max(subwindow.minimumWidth(), min(subwindow.width(), area.width())),
+                    max(subwindow.minimumHeight(), min(subwindow.height(), area.height())),
                 )
             x = max(0, min(subwindow.x(), max(0, area.width() - subwindow.width())))
             y = max(0, min(subwindow.y(), max(0, area.height() - subwindow.height())))
