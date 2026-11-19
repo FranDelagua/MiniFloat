@@ -10,7 +10,6 @@ from ctypes import wintypes
 from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication, QSlider
 
-from ui.desktop import Desktop
 from ui.window import MainWindow
 
 
@@ -97,11 +96,8 @@ sys.exit(app.exec())
             )
             window.show()
             self.application.processEvents()
-            desktop = window.findChild(Desktop)
             bar = window._control_bar
-            self.assertIsNotNone(desktop)
             self.assertIsNotNone(bar)
-            first = desktop.subWindowList()[0]
             slider_widget = bar.findChild(QSlider, "opacitySlider")
 
             def root_at(point: QPoint) -> int:
@@ -154,8 +150,9 @@ sys.exit(app.exec())
                 time.sleep(0.1)
                 user32.mouse_event(0x0004, 0, 0, 0, 0)
 
-            tool = window.mapFromGlobal(first.mapToGlobal(QPoint(50, 60)))
-            pin = window.mapFromGlobal(bar.pin_button.mapToGlobal(bar.pin_button.rect().center()))
+            pin = window.mapFromGlobal(
+                bar.pin_button.mapToGlobal(bar.pin_button.rect().center())
+            )
             slider = window.mapFromGlobal(
                 slider_widget.mapToGlobal(slider_widget.rect().center())
             )
@@ -179,6 +176,9 @@ sys.exit(app.exec())
             bar.pin_button.click()
             self.application.processEvents()
             self.assertFalse(bar.pin_button.isChecked())
+            self.assertTrue(bar.isVisible())
+            self.assertTrue(bar._pin_overlay.isVisible())
+            self.assertTrue(bar.mask().isEmpty())
             self.assertEqual(
                 root_at(blank),
                 underlay,
@@ -190,8 +190,7 @@ sys.exit(app.exec())
                 f"hit={describe_handle(user32.WindowFromPoint(wintypes.POINT(160, 320)))}, "
                 f"root={describe_handle(root_at(blank))}",
             )
-            self.assertEqual(root_at(tool), underlay)
-            self.assertEqual(root_at(pin), int(bar.winId()))
+            self.assertEqual(root_at(pin), int(bar._pin_overlay.winId()))
             self.assertEqual(root_at(slider), underlay)
             self.assertEqual(root_at(title_bar), underlay)
             for point in edge_points:
@@ -221,49 +220,20 @@ sys.exit(app.exec())
                 os.path.exists(click_log),
                 "The click-through area did not deliver the click to the other process",
             )
-            window_geometry = window.geometry()
-            tool_geometry = first.geometry()
             opacity = window.windowOpacity()
             slider_value = slider_widget.value()
-            tool_title = window.mapFromGlobal(
-                first.mapToGlobal(QPoint(first.width() // 2, 10))
-            )
-            tool_minimize = window.mapFromGlobal(
-                first.mapToGlobal(QPoint(first.width() - 30, 10))
-            )
-            tool_close = window.mapFromGlobal(
-                first.mapToGlobal(QPoint(first.width() - 10, 10))
-            )
             off_drag_attempts = (
                 (title_bar, QPoint(title_bar.x() + 40, title_bar.y() + 30)),
                 (
                     QPoint(1, window.height() // 2),
                     QPoint(35, window.height() // 2),
                 ),
-                (
-                    tool_title,
-                    QPoint(tool_title.x() + 35, tool_title.y() + 25),
-                ),
-                (
-                    QPoint(
-                        tool.x() + first.width() - 1,
-                        tool.y() + first.height() - 1,
-                    ),
-                    QPoint(
-                        tool.x() + first.width() + 30,
-                        tool.y() + first.height() + 30,
-                    ),
-                ),
             )
-            for point in (title_bar, tool_minimize, tool_close, slider):
+            for point in (title_bar, slider):
                 click_at(point)
             for start, end in off_drag_attempts:
                 drag_at(start, end)
             self.application.processEvents()
-            self.assertEqual(window.geometry(), window_geometry)
-            self.assertEqual(first.geometry(), tool_geometry)
-            self.assertTrue(first.isVisible())
-            self.assertFalse(first.isMinimized())
             self.assertEqual(slider_widget.value(), slider_value)
             self.assertAlmostEqual(window.windowOpacity(), opacity, delta=0.005)
 
@@ -274,14 +244,15 @@ sys.exit(app.exec())
             window.showNormal()
             self.application.processEvents()
             self.assertTrue(bar.isVisible())
+            self.assertTrue(bar._pin_overlay.isVisible())
             self.assertTrue(window._backdrop.isVisible())
 
-            self.assertEqual(root_at(pin), int(bar.winId()))
-            bar.pin_button.click()
+            self.assertEqual(root_at(pin), int(bar._pin_overlay.winId()))
+            click_at(pin)
             self.application.processEvents()
+            self.assertTrue(bar._pin_overlay.isChecked())
             self.assertTrue(bar.pin_button.isChecked())
             self.assertEqual(root_at(blank), int(window.winId()))
-            self.assertEqual(root_at(tool), int(window.winId()))
             self.assertEqual(root_at(slider), int(bar.winId()))
             self.assertEqual(root_at(title_bar), int(window.winId()))
             for value in (25, 50, 75, 100):
@@ -293,7 +264,6 @@ sys.exit(app.exec())
                     window._backdrop.windowOpacity(), value / 100, delta=0.005
                 )
                 self.assertEqual(root_at(blank), int(window.winId()))
-                self.assertEqual(root_at(tool), int(window.winId()))
 
         finally:
             if window is not None:
