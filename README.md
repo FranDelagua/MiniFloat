@@ -1,4 +1,4 @@
-# MiniFloat
+# MiniFloat (incomplete)
 
 MiniFloat es una capa flotante para Windows construida con Python y PySide6.
 Permite seleccionar algunas ventanas reales ya abiertas y alojarlas en un
